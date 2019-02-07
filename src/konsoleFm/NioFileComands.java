@@ -24,15 +24,16 @@ public class NioFileComands {
         return retPath;
     }
 
-    public static Path[] myDIRallPath(Path curentPath) {
+    public static Path[] myDIRallPath(Path curentPath, boolean print) {
 
         try {
             Stream<Path> list1 = Files.list(curentPath);
-            if (list1.count() == 0) {
+            int size = (int) list1.count();
+            if (size == 0) {
                 return null;
             }
             int j = 0;
-            int size = (int) list1.count();
+          //  int size = (int) list1.count();
             Path[] dir = new Path[size];
 
             Iterator<Path> iter1 = list1.iterator();
@@ -41,6 +42,9 @@ public class NioFileComands {
                 if (Files.isDirectory(p1)) {
                     dir[j] = p1;
                     j++;
+                    if(print){
+                        System.out.println(p1);
+                    }
                 }
             }
             Iterator<Path> iter2 = list1.iterator();
@@ -50,6 +54,9 @@ public class NioFileComands {
                     if (Files.isDirectory(p1)) {
                         dir[j] = p1;
                         j++;
+                        if(print){
+                            System.out.println(p1);
+                        }
                     }
                 }
             }

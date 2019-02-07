@@ -2,6 +2,7 @@ package konsoleFm;
 
 import java.io.Console;
 import java.io.File;
+import java.nio.file.Path;
 
 import static java.lang.System.exit;
 
@@ -12,18 +13,19 @@ public class App {
             System.err.print(" no conlose found");
             exit(1);
         }
-        File file = new File(".");
-        String directoryPath = file.getAbsolutePath();
-        directoryPath += ">";
+        File file = new File("");
+        file= file.getAbsoluteFile();
+        Path directoryPath = file.toPath();
+
         System.out.println( " File meneger for console ver 1");
         System.out.println( " base command");
         System.out.println( " cd");
         System.out.println( " dir");
         System.out.println( " exit");
-        System.out.println(directoryPath + " Enter command");
+        System.out.println(directoryPath + "> Enter command");
 
 
-        boolean exitB =true;
+       boolean exitB =true;
         while(exitB) {
             System.out.print(directoryPath);
             String fileComand = console.readLine();
@@ -38,24 +40,15 @@ public class App {
                         System.out.println(" no directory specifed");
                         break;
                     }
-                    file = FileManegerConsole.myCD(file, new File(parseComand[1]));
-                    directoryPath = file.getAbsolutePath();
-                    directoryPath += ">";
+                    directoryPath = NioFileComands.myCd(directoryPath, (new File(parseComand[1])).toPath());
+                    //directoryPath = file.getAbsolutePath();
                     break;
                 case "cd..":
                     System.out.println(file);
-                    file = FileManegerConsole.myCDreturn(file);
-                    directoryPath = file.getAbsolutePath();
-                    directoryPath += ">";
+                    directoryPath = NioFileComands.myCDreturn(directoryPath);
                     break;
                 case "dir":
-                    File[] directoryList = FileManegerConsole.myDIRall(file);
-                    if (directoryList == null) {
-                        break;
-                    }
-                    for (File dfile : directoryList) {
-                        System.out.println(dfile.getName());
-                    }
+                    Path[] directoryList = NioFileComands.myDIRallPath(directoryPath,true);
                     break;
                 case "exit":
                     exitB = false;
@@ -68,6 +61,7 @@ public class App {
 
         }
         System.out.println("exit from FM");
+
     }
 }
 
