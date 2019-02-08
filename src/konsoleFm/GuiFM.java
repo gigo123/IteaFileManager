@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
@@ -16,7 +18,7 @@ public class GuiFM extends JDialog {
     private JButton buttonOK;
     private JButton buttonCancel;
     private JTextArea textArea;
-    private JList<Path> fileList;
+    private JList<String> fileList;
     private JButton copyButton;
     private JButton deleteButton;
     private JScrollPane fileListPane;
@@ -25,8 +27,9 @@ public class GuiFM extends JDialog {
     private JPanel viewPanel;
 
     // Модель списка
-    private DefaultListModel<Path> dlm;
-    private File currentFile;
+    private DefaultListModel<String> dlm;
+    private Path currentFile;
+    private Path[] masFilesName;
 
     public GuiFM() {
         setContentPane(contentPane);
@@ -50,38 +53,38 @@ public class GuiFM extends JDialog {
         contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
         // Подключение слушателя мыши
-      /*  fileList.addMouseListener(new MouseAdapter() {
+       fileList.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) { //два клки мишкою
                     // Получение элемента
                     int selected = fileList.locationToIndex(e.getPoint());
                     System.out.println(dlm.getElementAt(selected));
+                   // System.out.println(currentFile);
                     // встановлення жля блоків відображення значень за замовчуванням
                     imageLabel.setText(" no image");
                     imageLabel.setIcon(null);
                     textArea.setText("no open file");
-                    if (dlm.getElementAt(selected).equals("..")) {  //  якщо символ поверненя на рівень вверх
-                        try {
-                            File newFile = new File(currentFile.getAbsolutePath());
-                            newFile = new File(newFile.getParent());
-                            setListFiles(newFile);
-                            currentFile = newFile;
+
+                    if (dlm.getElementAt(selected).equals(".."))
+                    {  //  якщо символ поверненя на рівень вверх
+                       try {
+                           currentFile=    NioFileComands.myCDreturn(currentFile);
+                            setListFiles(currentFile);
                         } catch (Exception ex) {
                             System.out.println("access error");
                         }
                     } else {  // якщо ініші символи
-                        File newFile = new File(currentFile.getAbsolutePath() + "\\" + dlm.getElementAt(selected));
-                        System.out.println(currentFile.getAbsolutePath() + "\\" + dlm.getElementAt(selected));
-                        if (newFile.isDirectory()) {  // якщо пнове посилання є папкою , то перохидомо до неї
-                            try {
-                                setListFiles(newFile);
-                                currentFile = newFile;
-                            } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(null, "access error");
-                                setListFiles(currentFile);
-                            }
-                        } else {  // якщо файл, то будемо читати
-                            Pattern p = Pattern.compile(".+\\.txt$"); // тествовий файл будемо вивиди на екран.
+                        try {
+                        //File newFile = new File(currentFile.getAbsolutePath() + "\\" + dlm.getElementAt(selected));
+                       Path newPath = masFilesName[selected-1];
+                      
+                        if (Files.isDirectory(newPath)) {  // якщо пнове посилання є папкою , то перохидомо до неї
+                                setListFiles(newPath);
+                                currentFile = newPath;
+
+                        } else {
+                            System.out.println("nodirectory");// якщо файл, то будемо читати
+                         /*   Pattern p = Pattern.compile(".+\\.txt$"); // тествовий файл будемо вивиди на екран.
                             Matcher m = p.matcher(newFile.getName());
                             if (m.matches()) {
                                 System.out.println("txt");
@@ -120,13 +123,19 @@ public class GuiFM extends JDialog {
                                     imageLabel.setText("image load problem");
                                 }
                             }
+                            */
                         }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null, "access error");
+                            setListFiles(currentFile);
+                        }
+
                     }
                 }
             }
         });
 
-        copyButton.addActionListener(new ActionListener() {
+      /*  copyButton.addActionListener(new ActionListener() {
             // копіювання файлу
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -184,9 +193,9 @@ public class GuiFM extends JDialog {
 
         GuiFM dialog = new GuiFM();
         File file = new File("");
-        Path path = file.toPath();
+        Path path = file.toPath().toAbsolutePath();
         dialog.setListFiles(path);
-        dialog.currentFile = file;
+        dialog.currentFile = path;
         dialog.pack();
         dialog.setVisible(true);
         System.exit(0);
@@ -203,20 +212,20 @@ public class GuiFM extends JDialog {
     }
 
     private void createUIComponents() {
-        dlm = new DefaultListModel<Path>();
-        fileList = new JList<Path>(dlm);// TODO: place custom component creation code here
+        dlm = new DefaultListModel<>();
+        fileList = new JList<>(dlm);// TODO: place custom component creation code here
         fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
     }
     // оновлення даних в списку
     private void setListFiles(Path path) {
 
-        Path[] masFilesName = NioFileComands.myDIRallPath(path,false);
+         masFilesName = NioFileComands.myDIRallPath(path,false);
         dlm.removeAllElements();
         for (int i = masFilesName.length - 1; i >= 0; i--) {
-            dlm.add(0, masFilesName[i]);
+            dlm.add(0, masFilesName[i].getFileName().toString());
         }
-        dlm.add(0, Paths.get(".."));
+        dlm.add(0, "..");
         fileList.setModel(dlm);
     }
 }
