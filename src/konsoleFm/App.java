@@ -21,6 +21,7 @@ public class App {
         System.out.println( " base command");
         System.out.println( " cd");
         System.out.println( " dir");
+        System.out.println( " rm");
         System.out.println( " exit");
         System.out.println(directoryPath + "> Enter command");
 
@@ -53,7 +54,10 @@ public class App {
                     directoryPath = NioFileComands.myCDreturn(directoryPath);
                     break;
                 case "dir":
-                    Path[] directoryList = NioFileComands.myDIRallPath(directoryPath,true);
+                    NioFileComands.myDIRallPath(directoryPath,true);
+                    break;
+                case "rm":
+                     NioFileComands.myRm((new File(parseComand[1])).getAbsoluteFile().toPath());
                     break;
                 case "exit":
                     exitB = false;
