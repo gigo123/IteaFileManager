@@ -6,8 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class GuiFM extends JDialog {
     private JPanel contentPane;
@@ -24,7 +24,8 @@ public class GuiFM extends JDialog {
 
     // Модель списка
     private DefaultListModel<String> dlm;
-    private File currentFile;
+    private Path currentFile;
+    private Path[] masFilesName;
 
     public GuiFM() {
         setContentPane(contentPane);
@@ -58,98 +59,93 @@ public class GuiFM extends JDialog {
                     imageLabel.setText(" no image");
                     imageLabel.setIcon(null);
                     textArea.setText("no open file");
+
                     if (dlm.getElementAt(selected).equals("..")) {  //  якщо символ поверненя на рівень вверх
                         try {
-                            File newFile = new File(currentFile.getAbsolutePath());
-                            newFile = new File(newFile.getParent());
-                            setListFiles(newFile);
-                            currentFile = newFile;
+                            currentFile = NioFileComands.myCDreturn(currentFile);
+                            setListFiles(currentFile);
                         } catch (Exception ex) {
                             System.out.println("access error");
                         }
                     } else {  // якщо ініші символи
-                        File newFile = new File(currentFile.getAbsolutePath() + "\\" + dlm.getElementAt(selected));
-                        System.out.println(currentFile.getAbsolutePath() + "\\" + dlm.getElementAt(selected));
-                        if (newFile.isDirectory()) {  // якщо пнове посилання є папкою , то перохидомо до неї
-                            try {
-                                setListFiles(newFile);
-                                currentFile = newFile;
-                            } catch (Exception ex) {
-                                JOptionPane.showMessageDialog(null, "access error");
-                                setListFiles(currentFile);
-                            }
-                        } else {  // якщо файл, то будемо читати
-                            Pattern p = Pattern.compile(".+\\.txt$"); // тествовий файл будемо вивиди на екран.
-                            Matcher m = p.matcher(newFile.getName());
-                            if (m.matches()) {
-                                System.out.println("txt");
-
-                                try (BufferedReader fis = new BufferedReader(new FileReader(newFile))) {
+                        try {
+                            Path newPath = masFilesName[selected - 1];
+                            if (Files.isDirectory(newPath)) {  // якщо пнове посилання є папкою , то перохидомо до неї
+                                setListFiles(newPath);
+                                currentFile = newPath;
+                            } else {
+                                String mimeType = Files.probeContentType(newPath);
+                                if (mimeType == null) {
+                                    textArea.setText("illegal format of file");
+                                    return;
+                                }
+                                System.out.println(mimeType);
+                                if (mimeType.equals("text/plain")) {
+                                    System.out.println("txt");
                                     String text = "";
-                                    String firs;
-                                    while ((firs = fis.readLine()) != null) {
-                                        text = text + firs + "\n";
+                                    try (BufferedReader fis = new BufferedReader(new FileReader(newPath.toFile()))) {
+                                        text = "";
+                                        String firs;
+                                        while ((firs = fis.readLine()) != null) {
+                                            text = text + firs + "\n";
+                                        }
+                                        textArea.setText(text);
+                                    } catch (IOException ex) {
+                                        textArea.setText("error reading file");
                                     }
-                                    //  viewPanel.add(wievPane);
-                                    // viewPanel.revalidate();
-                                    textArea.setText(text);
-                                } catch (IOException ex) {
-                                    textArea.setText("error reading file");
+                                }
+                                if (mimeType.equals("image/png") || mimeType.equals("image/jpg")) {
+                                    System.out.println("image");
+                                    try {
+                                        Image img = ImageIO.read(newPath.toFile());
+                                        int h = ((BufferedImage) img).getHeight();
+                                        System.out.println(h);
+                                        int w = ((BufferedImage) img).getWidth();
+                                        System.out.println(w);
+                                        float ratio = (float) h / (float) w;
+                                        System.out.println(ratio);
+                                        System.out.println(200 * ratio);
+                                        if (w > 200) {
+                                            img = img.getScaledInstance(200, (int) (200 * ratio), 1);
+                                            imageLabel.setText("");
+                                        }
+                                        imageLabel.setIcon(new ImageIcon(img));
+                                    } catch (IOException ex) {
+                                        imageLabel.setText("image load problem");
+                                    }
                                 }
                             }
-                            p = Pattern.compile(".+\\.(png|jpg)");
-                            m = p.matcher(newFile.getName());
-                            if (m.matches()) {
-                                try {
-                                    Image img = ImageIO.read(newFile);
-                                    int h = ((BufferedImage) img).getHeight();
-                                    System.out.println(h);
-                                    int w = ((BufferedImage) img).getWidth();
-                                    System.out.println(w);
-                                    float ratio = (float) h / (float) w;
-                                    System.out.println(ratio);
-                                    System.out.println(200 * ratio);
-                                    if(w>200) {
-                                        img = img.getScaledInstance(200, (int) (200 * ratio), 1);
-                                        imageLabel.setText("");
-                                    }
-                                    imageLabel.setIcon(new ImageIcon(img));
-                                } catch (IOException ex) {
-                                    imageLabel.setText("image load problem");
-                                }
-                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null, "access error");
+                            setListFiles(currentFile);
                         }
                     }
                 }
             }
         });
 
-        copyButton.addActionListener(new ActionListener() {
+       copyButton.addActionListener(new ActionListener() {
             // копіювання файлу
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (fileList.isSelectionEmpty()) {
                     return;
                 }
-                String selectFileName = fileList.getSelectedValue();
-                File selectFilePath = new File(currentFile.getAbsolutePath() + "\\" + selectFileName);
-                if (selectFilePath.isFile()) {
-                    System.out.println("file copy");
-                    try (FileInputStream fis = new FileInputStream(selectFilePath);
-                         FileOutputStream fos = new FileOutputStream(new File(currentFile.getAbsolutePath() + "\\" + "copy" + selectFileName))) {
-                        int c;
-                        while ((c = fis.read()) != -1) {
-                            fos.write(c);
-                        }
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(null, "access error");
-                        System.out.println("error");
-                    }
+                try {
+                    Path newPath = masFilesName[fileList.getSelectedIndex() - 1];
+                    String copyFile = newPath.getParent().toString() + "\\copy" + newPath.getFileName().toString();
+                    Path copyPAth = new File(copyFile).toPath();
+                    System.out.println(copyPAth);
+                    Files.copy(newPath, copyPAth);
                     setListFiles(currentFile);
+                }
+                catch (IOException ex){
+                    JOptionPane.showMessageDialog(null, "access error");
+                    System.out.println("error");
                 }
             }
         });
-        deleteButton.addActionListener(new ActionListener() {
+       deleteButton.addActionListener(new ActionListener() {
             // видалення файлу
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -160,18 +156,14 @@ public class GuiFM extends JDialog {
                 int dialogResult = JOptionPane.showConfirmDialog(null,
                         "A you sure wont  to delete file  ?", "Warning", dialogButton);
                 if (dialogResult == JOptionPane.YES_OPTION) {
-                    String selectFileName = fileList.getSelectedValue();
                     try {
-                        File selectFilePath = new File(currentFile.getAbsolutePath() + "\\" + selectFileName);
-                        boolean delete = selectFilePath.delete();
-                        if (!delete) {
-                            JOptionPane.showMessageDialog(null, "delete error");
-                        }
-                    } catch (Exception ex) {
+                        Path newPath = masFilesName[fileList.getSelectedIndex() - 1];
+                        Files.delete(newPath);
+                        setListFiles(currentFile);
+                    } catch (IOException ex) {
                         JOptionPane.showMessageDialog(null, "access error");
                         System.out.println("error");
                     }
-                    setListFiles(currentFile);
                 }
             }
         });
@@ -180,9 +172,10 @@ public class GuiFM extends JDialog {
     public static void main(String[] args) {
 
         GuiFM dialog = new GuiFM();
-        File file = new File(".");
-        dialog.setListFiles(file);
-        dialog.currentFile = file;
+        File file = new File("");
+        Path path = file.toPath().toAbsolutePath();
+        dialog.setListFiles(path);
+        dialog.currentFile = path;
         dialog.pack();
         dialog.setVisible(true);
         System.exit(0);
@@ -199,18 +192,18 @@ public class GuiFM extends JDialog {
     }
 
     private void createUIComponents() {
-        dlm = new DefaultListModel<String>();
-        fileList = new JList<String>(dlm);// TODO: place custom component creation code here
+        dlm = new DefaultListModel<>();
+        fileList = new JList<>(dlm);// TODO: place custom component creation code here
         fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
     }
-    // оновлення даних в списку
-    private void setListFiles(File file) {
 
-        String[] masFilesName = FileManegerConsole.myDIRallString(file);
+    // оновлення даних в списку
+    private void setListFiles(Path path) {
+
+        masFilesName = NioFileComands.myDIRallPath(path, false);
         dlm.removeAllElements();
         for (int i = masFilesName.length - 1; i >= 0; i--) {
-            dlm.add(0, masFilesName[i]);
+            dlm.add(0, masFilesName[i].getFileName().toString());
         }
         dlm.add(0, "..");
         fileList.setModel(dlm);

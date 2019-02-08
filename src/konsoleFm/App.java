@@ -2,6 +2,7 @@ package konsoleFm;
 
 import java.io.Console;
 import java.io.File;
+import java.nio.file.Path;
 
 import static java.lang.System.exit;
 
@@ -12,20 +13,22 @@ public class App {
             System.err.print(" no conlose found");
             exit(1);
         }
-        File file = new File(".");
-        String directoryPath = file.getAbsolutePath();
-        directoryPath += ">";
+        File file = new File("");
+        file= file.getAbsoluteFile();
+        Path directoryPath = file.toPath();
+
         System.out.println( " File meneger for console ver 1");
         System.out.println( " base command");
         System.out.println( " cd");
         System.out.println( " dir");
+        System.out.println( " rm");
         System.out.println( " exit");
-        System.out.println(directoryPath + " Enter command");
+        System.out.println(directoryPath + "> Enter command");
 
 
-        boolean exitB =true;
+       boolean exitB =true;
         while(exitB) {
-            System.out.print(directoryPath);
+            System.out.print(directoryPath + "\\>");
             String fileComand = console.readLine();
             String[] parseComand = fileComand.split(" ");
             String parseCom = parseComand[0];
@@ -38,24 +41,23 @@ public class App {
                         System.out.println(" no directory specifed");
                         break;
                     }
-                    file = FileManegerConsole.myCD(file, new File(parseComand[1]));
-                    directoryPath = file.getAbsolutePath();
-                    directoryPath += ">";
-                    break;
-                case "cd..":
-                    System.out.println(file);
-                    file = FileManegerConsole.myCDreturn(file);
-                    directoryPath = file.getAbsolutePath();
-                    directoryPath += ">";
-                    break;
-                case "dir":
-                    File[] directoryList = FileManegerConsole.myDIRall(file);
-                    if (directoryList == null) {
+                    if(parseComand[1].equals("..")){
+                        directoryPath = NioFileComands.myCDreturn(directoryPath);
                         break;
                     }
-                    for (File dfile : directoryList) {
-                        System.out.println(dfile.getName());
-                    }
+                   // System.out.println((new File(parseComand[1])).toPath());
+                    directoryPath = NioFileComands.myCd(directoryPath, (new File(parseComand[1])).getAbsoluteFile().toPath());
+                    //directoryPath = file.getAbsolutePath();
+                    break;
+                case "cd..":
+                   // System.out.println(file);
+                    directoryPath = NioFileComands.myCDreturn(directoryPath);
+                    break;
+                case "dir":
+                    NioFileComands.myDIRallPath(directoryPath,true);
+                    break;
+                case "rm":
+                     NioFileComands.myRm((new File(parseComand[1])).getAbsoluteFile().toPath());
                     break;
                 case "exit":
                     exitB = false;
@@ -68,6 +70,7 @@ public class App {
 
         }
         System.out.println("exit from FM");
+
     }
 }
 
