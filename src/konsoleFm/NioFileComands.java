@@ -21,45 +21,44 @@ public class NioFileComands {
         if (retPath == null) {
             return curentPath;
         }
+        System.out.println(retPath);
         return retPath;
     }
 
     public static Path[] myDIRallPath(Path curentPath, boolean print) {
 
         try {
-            Stream<Path> list1 = Files.list(curentPath);
-            int size = (int) list1.count();
+            Object[] list1 = Files.list(curentPath).toArray();
+            int size = list1.length;
             if (size == 0) {
                 return null;
             }
             int j = 0;
           //  int size = (int) list1.count();
             Path[] dir = new Path[size];
-
-            Iterator<Path> iter1 = list1.iterator();
-            while (iter1.hasNext()) {
-                Path p1 = iter1.next();
+            for(Object iter1:list1){
+                Path p1 = (Path) iter1;
                 if (Files.isDirectory(p1)) {
                     dir[j] = p1;
                     j++;
                     if(print){
-                        System.out.println(p1);
+                        System.out.println(p1.getFileName() + "\t\t DIR");
                     }
                 }
+
             }
-            Iterator<Path> iter2 = list1.iterator();
-            while (iter2.hasNext()) {
-                while (!iter1.hasNext()) {
-                    Path p1 = iter1.next();
-                    if (Files.isDirectory(p1)) {
-                        dir[j] = p1;
-                        j++;
-                        if(print){
-                            System.out.println(p1);
-                        }
+            for(Object iter2:list1){
+                Path p1 = (Path) iter2;
+                if (!Files.isDirectory(p1)) {
+                    dir[j] = p1;
+                    j++;
+                    if(print){
+                        System.out.println(p1.getFileName() + "\t\t FIlE");
                     }
                 }
+
             }
+
             return dir;
         } catch (IOException e) {
             System.out.println("error");

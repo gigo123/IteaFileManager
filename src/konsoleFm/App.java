@@ -27,7 +27,7 @@ public class App {
 
        boolean exitB =true;
         while(exitB) {
-            System.out.print(directoryPath);
+            System.out.print(directoryPath + "\\>");
             String fileComand = console.readLine();
             String[] parseComand = fileComand.split(" ");
             String parseCom = parseComand[0];
@@ -40,11 +40,16 @@ public class App {
                         System.out.println(" no directory specifed");
                         break;
                     }
-                    directoryPath = NioFileComands.myCd(directoryPath, (new File(parseComand[1])).toPath());
+                    if(parseComand[1].equals("..")){
+                        directoryPath = NioFileComands.myCDreturn(directoryPath);
+                        break;
+                    }
+                   // System.out.println((new File(parseComand[1])).toPath());
+                    directoryPath = NioFileComands.myCd(directoryPath, (new File(parseComand[1])).getAbsoluteFile().toPath());
                     //directoryPath = file.getAbsolutePath();
                     break;
                 case "cd..":
-                    System.out.println(file);
+                   // System.out.println(file);
                     directoryPath = NioFileComands.myCDreturn(directoryPath);
                     break;
                 case "dir":
