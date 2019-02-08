@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,7 +16,7 @@ public class GuiFM extends JDialog {
     private JButton buttonOK;
     private JButton buttonCancel;
     private JTextArea textArea;
-    private JList<String> fileList;
+    private JList<Path> fileList;
     private JButton copyButton;
     private JButton deleteButton;
     private JScrollPane fileListPane;
@@ -23,7 +25,7 @@ public class GuiFM extends JDialog {
     private JPanel viewPanel;
 
     // Модель списка
-    private DefaultListModel<String> dlm;
+    private DefaultListModel<Path> dlm;
     private File currentFile;
 
     public GuiFM() {
@@ -48,7 +50,7 @@ public class GuiFM extends JDialog {
         contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
         // Подключение слушателя мыши
-        fileList.addMouseListener(new MouseAdapter() {
+      /*  fileList.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) { //два клки мишкою
                     // Получение элемента
@@ -175,13 +177,15 @@ public class GuiFM extends JDialog {
                 }
             }
         });
+        */
     }
 
     public static void main(String[] args) {
 
         GuiFM dialog = new GuiFM();
-        File file = new File(".");
-        dialog.setListFiles(file);
+        File file = new File("");
+        Path path = file.toPath();
+        dialog.setListFiles(path);
         dialog.currentFile = file;
         dialog.pack();
         dialog.setVisible(true);
@@ -199,20 +203,20 @@ public class GuiFM extends JDialog {
     }
 
     private void createUIComponents() {
-        dlm = new DefaultListModel<String>();
-        fileList = new JList<String>(dlm);// TODO: place custom component creation code here
+        dlm = new DefaultListModel<Path>();
+        fileList = new JList<Path>(dlm);// TODO: place custom component creation code here
         fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
     }
     // оновлення даних в списку
-    private void setListFiles(File file) {
+    private void setListFiles(Path path) {
 
-        String[] masFilesName = FileManegerConsole.myDIRallString(file);
+        Path[] masFilesName = NioFileComands.myDIRallPath(path,false);
         dlm.removeAllElements();
         for (int i = masFilesName.length - 1; i >= 0; i--) {
             dlm.add(0, masFilesName[i]);
         }
-        dlm.add(0, "..");
+        dlm.add(0, Paths.get(".."));
         fileList.setModel(dlm);
     }
 }
