@@ -5,10 +5,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -58,7 +55,6 @@ public class GuiFM extends JDialog {
                     // Получение элемента
                     int selected = fileList.locationToIndex(e.getPoint());
                     System.out.println(dlm.getElementAt(selected));
-                    // System.out.println(currentFile);
                     // встановлення жля блоків відображення значень за замовчуванням
                     imageLabel.setText(" no image");
                     imageLabel.setIcon(null);
@@ -73,23 +69,16 @@ public class GuiFM extends JDialog {
                         }
                     } else {  // якщо ініші символи
                         try {
-                            //File newFile = new File(currentFile.getAbsolutePath() + "\\" + dlm.getElementAt(selected));
                             Path newPath = masFilesName[selected - 1];
-
                             if (Files.isDirectory(newPath)) {  // якщо пнове посилання є папкою , то перохидомо до неї
                                 setListFiles(newPath);
                                 currentFile = newPath;
-
                             } else {
                                 String mimeType = Files.probeContentType(newPath);
-                                // Pattern p = Pattern.compile(".+\\.txt$"); // тествовий файл будемо вивиди на екран.
-                                //  Matcher m = p.matcher(currentFile.getFileName().toString());
-                                //   Files.
                                 if (mimeType == null) {
                                     textArea.setText("illegal format of file");
                                     return;
                                 }
-
                                 System.out.println(mimeType);
                                 if (mimeType.equals("text/plain")) {
                                     System.out.println("txt");
@@ -100,8 +89,6 @@ public class GuiFM extends JDialog {
                                         while ((firs = fis.readLine()) != null) {
                                             text = text + firs + "\n";
                                         }
-                                        //  viewPanel.add(wievPane);
-                                        // viewPanel.revalidate();
                                         textArea.setText(text);
                                     } catch (IOException ex) {
                                         textArea.setText("error reading file");
@@ -132,38 +119,33 @@ public class GuiFM extends JDialog {
                             JOptionPane.showMessageDialog(null, "access error");
                             setListFiles(currentFile);
                         }
-
                     }
                 }
             }
         });
 
-      /*  copyButton.addActionListener(new ActionListener() {
+       copyButton.addActionListener(new ActionListener() {
             // копіювання файлу
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (fileList.isSelectionEmpty()) {
                     return;
                 }
-                String selectFileName = fileList.getSelectedValue();
-                File selectFilePath = new File(currentFile.getAbsolutePath() + "\\" + selectFileName);
-                if (selectFilePath.isFile()) {
-                    System.out.println("file copy");
-                    try (FileInputStream fis = new FileInputStream(selectFilePath);
-                         FileOutputStream fos = new FileOutputStream(new File(currentFile.getAbsolutePath() + "\\" + "copy" + selectFileName))) {
-                        int c;
-                        while ((c = fis.read()) != -1) {
-                            fos.write(c);
-                        }
-                    } catch (IOException ex) {
-                        JOptionPane.showMessageDialog(null, "access error");
-                        System.out.println("error");
-                    }
+                try {
+                    Path newPath = masFilesName[fileList.getSelectedIndex() - 1];
+                    String copyFile = newPath.getParent().toString() + "\\copy" + newPath.getFileName().toString();
+                    Path copyPAth = new File(copyFile).toPath();
+                    System.out.println(copyPAth);
+                    Files.copy(newPath, copyPAth);
                     setListFiles(currentFile);
+                }
+                catch (IOException ex){
+                    JOptionPane.showMessageDialog(null, "access error");
+                    System.out.println("error");
                 }
             }
         });
-        deleteButton.addActionListener(new ActionListener() {
+       deleteButton.addActionListener(new ActionListener() {
             // видалення файлу
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -174,22 +156,17 @@ public class GuiFM extends JDialog {
                 int dialogResult = JOptionPane.showConfirmDialog(null,
                         "A you sure wont  to delete file  ?", "Warning", dialogButton);
                 if (dialogResult == JOptionPane.YES_OPTION) {
-                    String selectFileName = fileList.getSelectedValue();
                     try {
-                        File selectFilePath = new File(currentFile.getAbsolutePath() + "\\" + selectFileName);
-                        boolean delete = selectFilePath.delete();
-                        if (!delete) {
-                            JOptionPane.showMessageDialog(null, "delete error");
-                        }
-                    } catch (Exception ex) {
+                        Path newPath = masFilesName[fileList.getSelectedIndex() - 1];
+                        Files.delete(newPath);
+                        setListFiles(currentFile);
+                    } catch (IOException ex) {
                         JOptionPane.showMessageDialog(null, "access error");
                         System.out.println("error");
                     }
-                    setListFiles(currentFile);
                 }
             }
         });
-        */
     }
 
     public static void main(String[] args) {
@@ -218,7 +195,6 @@ public class GuiFM extends JDialog {
         dlm = new DefaultListModel<>();
         fileList = new JList<>(dlm);// TODO: place custom component creation code here
         fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
     }
 
     // оновлення даних в списку
