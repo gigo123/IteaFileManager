@@ -12,7 +12,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class GuiFM extends JDialog {
+public class GuiFM2 extends JFrame {
+
     private JPanel contentPane;
     private JButton buttonOK;
     private JButton buttonCancel;
@@ -21,24 +22,51 @@ public class GuiFM extends JDialog {
     private JButton copyButton;
     private JButton deleteButton;
     private JScrollPane fileListPane;
-    private JScrollPane wievPane;
+    private JScrollPane textPane;
     private JLabel imageLabel;
     private JPanel viewPanel;
+    private JPanel centarlPanel;
+    private JPanel buttonPanel;
 
     // Модель списка
     private DefaultListModel<String> dlm;
     private Path currentFile;
     private Path[] masFilesName;
+    String TextArea = "text";
+    String ImageArea = "image";
 
-    public GuiFM() {
-        setContentPane(contentPane);
-        setModal(true);
+    public GuiFM2() {
+        contentPane = new JPanel();
+        buttonOK = new JButton("ok");
+        buttonCancel = new JButton("cancel");
+        copyButton= new JButton("copy");
+        deleteButton= new JButton("delete");
+        buttonPanel= new JPanel();
+        buttonPanel.add(copyButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(buttonCancel);
+        buttonPanel.add(buttonOK);
+        add(buttonPanel,BorderLayout.SOUTH);
+        dlm = new DefaultListModel<>();
+        fileList = new JList<>(dlm);
+        fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        fileListPane= new JScrollPane(fileList);
+        centarlPanel = new JPanel();
+        GridLayout layout = new GridLayout(1, 0, 5, 12);
+        centarlPanel.setLayout(layout);
+        centarlPanel.add(fileListPane);
+        imageLabel = new JLabel();
+        textArea = new JTextArea();
+        textPane = new JScrollPane(textArea);
+        viewPanel = new JPanel(new CardLayout());
+        viewPanel.add(textPane,TextArea);
+        viewPanel.add(imageLabel,ImageArea);
+        centarlPanel.add(viewPanel);
+        add(centarlPanel);
         Dimension dim = new Dimension(600, 400);
         setTitle("FileManager");
         setMinimumSize(dim);
-
         getRootPane().setDefaultButton(buttonOK);
-
         buttonOK.addActionListener(e -> onOK());
         buttonCancel.addActionListener(e -> onCancel());
         // call onCancel() when cross is clicked
@@ -49,7 +77,7 @@ public class GuiFM extends JDialog {
             }
         });
         // call onCancel() on ESCAPE
-        contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+       // contentPane.registerKeyboardAction(e -> onCancel(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
         // Подключение слушателя мыши
         fileList.addMouseListener(new MouseAdapter() {
@@ -59,9 +87,9 @@ public class GuiFM extends JDialog {
                     int selected = fileList.locationToIndex(e.getPoint());
                     System.out.println(dlm.getElementAt(selected));
                     // встановлення жля блоків відображення значень за замовчуванням
-                    imageLabel.setText(" no image");
+                    imageLabel.setText("");
                     imageLabel.setIcon(null);
-                    textArea.setText("no open file");
+                   textArea.setText("");
 
                     if (dlm.getElementAt(selected).equals("..")) {  //  якщо символ поверненя на рівень вверх
                         try {
@@ -83,7 +111,9 @@ public class GuiFM extends JDialog {
                                     return;
                                 }
                                 System.out.println(mimeType);
-                                if (mimeType.equals("text/plain")) {
+                                if (mimeType.equals("text/plain")||mimeType.equals("text/xml")) {
+                                    CardLayout layout = (CardLayout)(viewPanel.getLayout());
+                                    layout.show(viewPanel, TextArea);
                                     System.out.println("txt");
                                     String text = "";
                                     try (BufferedReader fis = new BufferedReader(new FileReader(newPath.toFile()))) {
@@ -97,7 +127,7 @@ public class GuiFM extends JDialog {
                                         textArea.setText("error reading file");
                                     }
                                 }
-                                if (mimeType.equals("image/png") || mimeType.equals("image/jpg")) {
+                                if (mimeType.equals("image/png") || mimeType.equals("image/jpeg")) {
                                     System.out.println("image");
                                     try {
                                         Image img = ImageIO.read(newPath.toFile());
@@ -113,6 +143,8 @@ public class GuiFM extends JDialog {
                                             imageLabel.setText("");
                                         }
                                         imageLabel.setIcon(new ImageIcon(img));
+                                        CardLayout layout = (CardLayout)(viewPanel.getLayout());
+                                        layout.show(viewPanel, ImageArea);
                                     } catch (IOException ex) {
                                         imageLabel.setText("image load problem");
                                     }
@@ -173,14 +205,15 @@ public class GuiFM extends JDialog {
 
     public static void main(String[] args) {
 
-        GuiFM dialog = new GuiFM();
+        GuiFM2 dialog = new GuiFM2();
         File file = new File("");
         Path path = file.toPath().toAbsolutePath();
         dialog.setListFiles(path);
         dialog.currentFile = path;
         dialog.pack();
         dialog.setVisible(true);
-        System.exit(0);
+        dialog.validate();
+       // System.exit(0);
     }
 
     private void onOK() {
@@ -193,15 +226,8 @@ public class GuiFM extends JDialog {
         dispose();
     }
 
-    private void createUIComponents() {
-        dlm = new DefaultListModel<>();
-        fileList = new JList<>(dlm);// TODO: place custom component creation code here
-        fileList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    }
-
     // оновлення даних в списку
     private void setListFiles(Path path) {
-
         masFilesName = NioFileComands.myDIRallPath(path, false);
         dlm.removeAllElements();
         for (int i = masFilesName.length - 1; i >= 0; i--) {
